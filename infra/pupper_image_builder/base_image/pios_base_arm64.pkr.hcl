@@ -8,7 +8,7 @@ packer {
 }
 
 source "arm" "raspbian" {
-  file_urls             = ["file://trixie_base.img.xz"]
+  file_urls             = ["file:///build/trixie_base.img.xz"]
   file_checksum_type    = "none"
   file_target_extension = "xz"
   file_unarchive_cmd    = ["xz", "--decompress", "$ARCHIVE_PATH"]

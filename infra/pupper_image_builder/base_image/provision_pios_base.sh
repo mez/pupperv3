@@ -67,18 +67,15 @@ sudo apt install -y avahi-daemon net-tools openssh-server curl
 
 # GPIO / I2C / Python tools
 sudo apt install -y python-is-python3 python3-pip i2c-tools libgpiod-dev python3-libgpiod
-sudo rm -f /usr/lib/python3.*/EXTERNALLY-MANAGED
-pip install Adafruit-Blinka RPi.GPIO
 
 # Bluetooth
 sudo apt install -y bluez
 
 # Audio
 sudo apt install -y portaudio19-dev python3-pyaudio alsa-utils
-pip install --upgrade pyaudio deepgram-sdk
 
 # General tools
-sudo apt install -y software-properties-common vim
+sudo apt install -y vim nano
 
 # Update all packages
 export APT_LISTCHANGES_FRONTEND=none

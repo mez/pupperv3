@@ -88,24 +88,25 @@ apt-get install -y hailo-all
 apt-get install -y git git-lfs
 
 cd "$HOME_DIR"
-rm -rf pupperv3-monorepo
-retry_command "git clone https://github.com/Nate711/pupperv3-monorepo.git --recurse-submodules"
-cd "$HOME_DIR/pupperv3-monorepo"
-git config --global --add safe.directory "$HOME_DIR/pupperv3-monorepo"
+rm -rf pupperv3
+retry_command "git clone https://github.com/mez/pupperv3.git --recurse-submodules"
+cd "$HOME_DIR/pupperv3"
+git config --global --add safe.directory "$HOME_DIR/pupperv3"
 git lfs install
 git lfs pull
-chown -R "$DEFAULT_USER:$DEFAULT_USER" "$HOME_DIR/pupperv3-monorepo"
+chown -R "$DEFAULT_USER:$DEFAULT_USER" "$HOME_DIR/pupperv3"
 
 ################################ Python deps ################################
 pip install wandb sounddevice pydub pyaudio black supervision opencv-python loguru pandas
+pip install Adafruit-Blinka RPi.GPIO
 pip install "numpy<2" "opencv-python" "pyzmq"
 pip install typeguard
 pip uninstall -y em || true
 pip install empy==3.3.4
 
 ################################ ROS2 source deps ################################
-mkdir -p "$HOME_DIR/pupperv3-monorepo/ros2_ws/src/common"
-cd "$HOME_DIR/pupperv3-monorepo/ros2_ws/src/common"
+mkdir -p "$HOME_DIR/pupperv3/ros2_ws/src/common"
+cd "$HOME_DIR/pupperv3/ros2_ws/src/common"
 
 apt-get install -y libcap-dev libwebsocketpp-dev nlohmann-json3-dev libcamera-dev
 
@@ -120,16 +121,16 @@ for repo in "${repos[@]}"; do
 done
 
 # Pin foxglove-sdk — commit before ament_index_cpp/version.h was required (Mar 5 2026 broke Jazzy builds)
-git config --global --add safe.directory "$HOME_DIR/pupperv3-monorepo/ros2_ws/src/common/foxglove-sdk"
-cd "$HOME_DIR/pupperv3-monorepo/ros2_ws/src/common/foxglove-sdk"
+git config --global --add safe.directory "$HOME_DIR/pupperv3/ros2_ws/src/common/foxglove-sdk"
+cd "$HOME_DIR/pupperv3/ros2_ws/src/common/foxglove-sdk"
 git checkout 854ac57892da4c7171513ebc7dcb09ba5f63f9a3
 
 # Pin rosx_introspection — older commit avoids GTest errors
-git config --global --add safe.directory "$HOME_DIR/pupperv3-monorepo/ros2_ws/src/common/rosx_introspection"
-cd "$HOME_DIR/pupperv3-monorepo/ros2_ws/src/common/rosx_introspection"
+git config --global --add safe.directory "$HOME_DIR/pupperv3/ros2_ws/src/common/rosx_introspection"
+cd "$HOME_DIR/pupperv3/ros2_ws/src/common/rosx_introspection"
 git checkout 3922e2c
 
-cd "$HOME_DIR/pupperv3-monorepo/ros2_ws/src/common"
+cd "$HOME_DIR/pupperv3/ros2_ws/src/common"
 retry_command "git clone https://github.com/ros-tooling/topic_tools.git --branch jazzy --recurse-submodules"
 
 if [ "$GITHUB_TOKEN_CONFIGURED" = true ]; then
@@ -138,7 +139,7 @@ if [ "$GITHUB_TOKEN_CONFIGURED" = true ]; then
 fi
 
 ################################ Build workspace ################################
-cd "$HOME_DIR/pupperv3-monorepo/ros2_ws"
+cd "$HOME_DIR/pupperv3/ros2_ws"
 source /opt/ros/jazzy/setup.bash
 
 # Step 1: Build all packages except neural_controller (OOM) and vision_msgs_rviz_plugins (API break)
@@ -179,7 +180,7 @@ if grep -qi 'failed' "$tmpfile"; then
 fi
 rm -f "$tmpfile"
 
-echo "source $HOME_DIR/pupperv3-monorepo/ros2_ws/install/local_setup.bash" >> "$HOME_DIR/.bashrc"
+echo "source $HOME_DIR/pupperv3/ros2_ws/install/local_setup.bash" >> "$HOME_DIR/.bashrc"
 
 chown -R "$DEFAULT_USER:$DEFAULT_USER" "$HOME_DIR"
 

@@ -18,17 +18,17 @@ if [ ! -f "${BASE_IMG}.stripped" ]; then
     if [ ! -f "${BASE_IMG}" ]; then
         echo "Downloading Trixie base image..."
         curl -L --progress-bar -o "${BASE_IMG}" "${IMAGE_URL}"
-    fi
 
-    echo "Verifying download integrity..."
-    EXPECTED_HASH=$(curl -sSL "${SHA256_URL}" | awk '{print $1}')
-    ACTUAL_HASH=$(shasum -a 256 "${BASE_IMG}" | awk '{print $1}')
-    if [ "${ACTUAL_HASH}" != "${EXPECTED_HASH}" ]; then
-        echo "ERROR: SHA256 mismatch! Expected ${EXPECTED_HASH}, got ${ACTUAL_HASH}" >&2
-        rm -f "${BASE_IMG}"
-        exit 1
+        echo "Verifying download integrity..."
+        EXPECTED_HASH=$(curl -sSL "${SHA256_URL}" | awk '{print $1}')
+        ACTUAL_HASH=$(shasum -a 256 "${BASE_IMG}" | awk '{print $1}')
+        if [ "${ACTUAL_HASH}" != "${EXPECTED_HASH}" ]; then
+            echo "ERROR: SHA256 mismatch! Expected ${EXPECTED_HASH}, got ${ACTUAL_HASH}" >&2
+            rm -f "${BASE_IMG}"
+            exit 1
+        fi
+        echo "Checksum verified."
     fi
-    echo "Checksum verified."
 
     # If stripping fails, remove the marker so the next run retries cleanly
     trap 'rm -f "${BASE_IMG}.stripped"' ERR
@@ -53,6 +53,7 @@ if [ ! -f "${BASE_IMG}.stripped" ]; then
             rm raw.img
         "
     touch "${BASE_IMG}.stripped"
+    trap - ERR
     echo "Pre-processing complete."
 fi
 
