@@ -1,0 +1,31 @@
+# Ignore ROS2 workspace build, log, and install directories
+ros2_ws/build/
+ros2_ws/log/
+ros2_ws/install/
+
+# Bag recordings
+bags/
+untracked_bags/
+
+# Image builder artifacts
+*.img
+*.img.xz
+*.img.xz.new
+*.img.xz.stripped
+raw.img
+infra/pupper_image_builder/base_image/.packer_cache/
+
+# Rust
+target/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+
+# Misc
+*.DS_Store
+*.pem
+*.pyc
+*.wav
