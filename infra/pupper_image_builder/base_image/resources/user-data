@@ -12,5 +12,10 @@ users:
 
 ssh_pwauth: true
 
+# Ensure SSH is enabled on first boot
+runcmd:
+  - systemctl enable ssh
+  - systemctl start ssh
+
 package_update: false
 package_upgrade: false

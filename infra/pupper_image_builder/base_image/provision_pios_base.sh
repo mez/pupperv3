@@ -65,7 +65,10 @@ sudo cp 4HDMIB_DTBO/*.dtbo /boot/firmware/overlays/
 rm -r 4HDMIB_DTBO 4HDMIB_DTBO.zip
 
 # Networking and SSH
-sudo apt install -y avahi-daemon net-tools openssh-server curl
+sudo apt install -y avahi-daemon net-tools openssh-server curl network-manager
+systemctl enable ssh
+systemctl enable avahi-daemon
+systemctl enable NetworkManager
 
 # GPIO / I2C / Python tools
 sudo apt install -y python-is-python3 python3-pip i2c-tools libgpiod-dev python3-libgpiod
@@ -75,6 +78,11 @@ sudo apt install -y bluez
 
 # Audio
 sudo apt install -y portaudio19-dev python3-pyaudio alsa-utils
+# Set HiFiBerry DAC as default audio output (card 0 is typically the DAC with hifiberry overlay)
+cat > /etc/asound.conf << 'EOF'
+defaults.pcm.card 0
+defaults.ctl.card 0
+EOF
 
 # General tools
 sudo apt install -y vim nano
@@ -90,3 +98,7 @@ apt-get -y \
   upgrade
 
 rm -f /usr/sbin/policy-rc.d
+
+# Clone pupperv3 repo into pi's home directory
+apt-get install -y git
+sudo -u pi git clone https://github.com/mez/pupperv3.git /home/pi/pupperv3
