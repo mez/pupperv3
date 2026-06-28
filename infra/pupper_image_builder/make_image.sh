@@ -1,8 +1,12 @@
 #!/bin/bash -e
 
 set -x
+set -o pipefail
 
-cd "$(dirname "$0")/base_image"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+
+cd "${SCRIPT_DIR}/base_image"
 
 GIT_COMMIT_SHORT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 
@@ -58,8 +62,19 @@ if [ ! -f "${BASE_IMG}.stripped" ]; then
 fi
 
 docker pull mkaczanowski/packer-builder-arm:latest
+
+echo "Creating pupperv3 repo tarball for baking into image..."
+tar -czf resources/pupperv3_src.tar.gz \
+    --exclude='__pycache__' \
+    --exclude='*.pyc' \
+    -C "${REPO_ROOT}" \
+    ros2_ws ai robot pupper-rs scripts README.md
+
 docker run --rm --privileged -v /dev:/dev -v "${PWD}:/build" mkaczanowski/packer-builder-arm:latest init pios_base_arm64.pkr.hcl
 docker run --rm --privileged -v /dev:/dev -v "${PWD}:/build" mkaczanowski/packer-builder-arm:latest build pios_base_arm64.pkr.hcl
+
+echo "Cleaning up staged tarball..."
+rm -f resources/pupperv3_src.tar.gz
 
 if [ -f "pupOS_pios_base.img" ]; then
   mv -f "pupOS_pios_base.img" "pupOS_pios_base_${GIT_COMMIT_SHORT}.img"

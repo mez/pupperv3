@@ -1,0 +1,8 @@
+.packer_cache
+.packer_plugins
+*.img
+*.xz
+raw.img
+.DS_Store
+resources/pupperv3_src/
+resources/pupperv3_src.tar.gz

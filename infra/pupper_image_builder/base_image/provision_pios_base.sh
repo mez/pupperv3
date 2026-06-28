@@ -32,6 +32,12 @@ fi
 mkdir -p /home/$DEFAULT_USER
 chown -R $DEFAULT_USER /home/$DEFAULT_USER
 
+# Extract pre-staged pupperv3 repo into pi's home directory
+mkdir -p /home/pi/pupperv3
+tar -xzf /tmp/pupperv3_src.tar.gz -C /home/pi/pupperv3 --strip-components=1
+rm /tmp/pupperv3_src.tar.gz
+chown -R pi:pi /home/pi/pupperv3
+
 # Setup for Raspberry Pi 5
 echo 'dtparam=spi=on' | sudo tee -a /boot/firmware/config.txt
 echo 'dtparam=i2c_arm=on,i2c_arm_baudrate=100000' | sudo tee -a /boot/firmware/config.txt
@@ -98,7 +104,3 @@ apt-get -y \
   upgrade
 
 rm -f /usr/sbin/policy-rc.d
-
-# Clone pupperv3 repo into pi's home directory
-apt-get install -y git
-sudo -u pi git clone https://github.com/mez/pupperv3.git /home/pi/pupperv3

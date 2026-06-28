@@ -62,6 +62,11 @@ build {
     destination = "/boot/firmware/user-data"
   }
 
+  provisioner "file" {
+    source      = "resources/pupperv3_src.tar.gz"
+    destination = "/tmp/pupperv3_src.tar.gz"
+  }
+
   provisioner "shell" {
     script = "provision_pios_base.sh"
   }
