@@ -68,7 +68,9 @@ tar -czf resources/pupperv3_src.tar.gz \
     --exclude='__pycache__' \
     --exclude='*.pyc' \
     -C "${REPO_ROOT}" \
-    ros2_ws ai robot pupper-rs scripts README.md
+    ros2_ws ai robot pupper-rs scripts README.md \
+    -C "${REPO_ROOT}/infra/pupper_image_builder" \
+    install_scripts
 
 docker run --rm --privileged -v /dev:/dev -v "${PWD}:/build" mkaczanowski/packer-builder-arm:latest init pios_base_arm64.pkr.hcl
 docker run --rm --privileged -v /dev:/dev -v "${PWD}:/build" mkaczanowski/packer-builder-arm:latest build pios_base_arm64.pkr.hcl

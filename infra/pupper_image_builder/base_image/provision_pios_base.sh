@@ -34,7 +34,7 @@ chown -R $DEFAULT_USER /home/$DEFAULT_USER
 
 # Extract pre-staged pupperv3 repo into pi's home directory
 mkdir -p /home/pi/pupperv3
-tar -xzf /tmp/pupperv3_src.tar.gz -C /home/pi/pupperv3 --strip-components=1
+tar -xzf /tmp/pupperv3_src.tar.gz -C /home/pi/pupperv3
 rm /tmp/pupperv3_src.tar.gz
 chown -R pi:pi /home/pi/pupperv3
 
