@@ -51,9 +51,8 @@ echo 'gpu_mem=128' >> /boot/firmware/config.txt
 
 # Screen rotation
 sed -i '1s/^/video=HDMI-A-1:720x720M@60D,rotate=270 /' /boot/firmware/cmdline.txt
-
-# Register firstrun.sh to execute on first boot (sets hostname, user, password, SSH, WiFi)
-sed -i '1s|$| systemd.run=/boot/firstrun.sh systemd.run_success_action=reboot systemd.unit=kernel-command-line.target|' /boot/firmware/cmdline.txt
+# Remove any leftover systemd.run firstrun.sh entries
+sed -i 's| systemd\.run=[^ ]*||g; s| systemd\.run_success_action=[^ ]*||g; s| systemd\.unit=[^ ]*||g' /boot/firmware/cmdline.txt
 
 # HiFiBerry DAC speaker
 echo 'dtoverlay=hifiberry-dac' >> /boot/firmware/config.txt

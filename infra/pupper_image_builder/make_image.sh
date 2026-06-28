@@ -65,3 +65,12 @@ if [ -f "pupOS_pios_base.img" ]; then
   mv -f "pupOS_pios_base.img" "pupOS_pios_base_${GIT_COMMIT_SHORT}.img"
   echo "Image saved as pupOS_pios_base_${GIT_COMMIT_SHORT}.img"
 fi
+
+# Write cloud-init user-data to the FAT boot partition
+# (packer's chroot can't reach the FAT partition, so we do it post-build on the host)
+IMG="pupOS_pios_base_${GIT_COMMIT_SHORT}.img"
+echo "Writing cloud-init user-data to boot partition..."
+hdiutil attach "${IMG}" -nobrowse
+cp resources/user-data /Volumes/bootfs/user-data
+hdiutil detach /Volumes/bootfs
+echo "user-data written successfully."

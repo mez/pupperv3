@@ -1,0 +1,16 @@
+#cloud-config
+hostname: pupper
+manage_etc_hosts: true
+
+users:
+  - name: pi
+    gecos: Pi
+    groups: [sudo, video, audio, dialout, plugdev, netdev, gpio, i2c, spi]
+    shell: /bin/bash
+    lock_passwd: false
+    passwd: "$5$1r35KLFeFvmQv/it$qIWBIOnD0zoKCOAplIeD/2suHrxngHyuyZOe35PgjC9"
+
+ssh_pwauth: true
+
+package_update: false
+package_upgrade: false

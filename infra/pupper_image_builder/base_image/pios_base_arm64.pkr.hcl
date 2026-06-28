@@ -58,8 +58,8 @@ build {
   }
 
   provisioner "file" {
-    source      = "resources/firstrun.sh"
-    destination = "/boot/firstrun.sh"
+    source      = "resources/user-data"
+    destination = "/boot/firmware/user-data"
   }
 
   provisioner "shell" {

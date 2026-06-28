@@ -59,6 +59,6 @@ fi
 
 chown -R pi /home/pi
 
-rm -f /boot/firstrun.sh
+rm -f /boot/firmware/firstrun.sh
 sed -i 's| systemd.run.*||g' /boot/cmdline.txt
 exit 0
