@@ -64,6 +64,21 @@ sed -i '1s/^/video=HDMI-A-1:720x720M@60D,rotate=270 /' /boot/firmware/cmdline.tx
 # Remove any leftover systemd.run firstrun.sh entries
 sed -i 's| systemd\.run=[^ ]*||g; s| systemd\.run_success_action=[^ ]*||g; s| systemd\.unit=[^ ]*||g' /boot/firmware/cmdline.txt
 
+# Force the panel EDID so the display deterministically knows its 720x720 mode.
+# The panel reports a cloned "Lenovo L1950wD" EDID whose real preferred timing is
+# 720x720, but on slow/cold boots the live DDC read can come back empty — then
+# the desktop defaults to 1024x768, which this panel can't sync (blank screen).
+# This baked-in copy is loaded by the kernel regardless of the live read.
+install -d /lib/firmware/edid
+base64 -d > /lib/firmware/edid/pupper-panel.bin <<'EDID_B64'
+AP///////wAwroYQAQEBASIVAQOAKRp47uW1o1VJmScTUFQgAAABAQEBAQEBAQEBAQEBAQEBMBHQ
+ACHQIiBkUCQE//8AAAAcAAAA/ABMRU4gTDE5NTB3RAogAAAA/QAyTB5RDgAKICAgICAgAAAA/wBC
+MzQzMjg0NQogICAgAXgCAxRxQQAjCQcHgwEAAGUDDAAQAAAAABAAQDEgDEBVALmIIQAAGAAAABAA
+HBYgWCwlALmIIQAAngAAABAAHBYgECwlgLmIIQAAngAAABAAMDAKICAgICAgICAgIAAAABAAOC1A
+ECxFgLmIIQAAHgAAAAAAAAAAAAAAAAAAAAAA+Q==
+EDID_B64
+sed -i '1s/^/drm.edid_firmware=HDMI-A-1:edid\/pupper-panel.bin /' /boot/firmware/cmdline.txt
+
 # Desktop (Wayland) output mode + rotation. The cmdline video= above only sets
 # the *console*; the labwc compositor picks its own mode via kanshi and ignores
 # it. The 720x720 panel has no EDID, so without this kanshi profile the desktop
