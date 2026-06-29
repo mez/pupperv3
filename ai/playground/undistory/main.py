@@ -447,8 +447,8 @@ def main():
 
     args = parser.parse_args()
 
-    # Default directory
-    default_dir = "/Users/nathankau/pupperv3-monorepo/ai/playground/undistory"
+    # Default directory (this script's own folder)
+    default_dir = os.path.dirname(os.path.abspath(__file__))
 
     # Load camera parameters from YAML
     if args.config:

@@ -26,6 +26,7 @@ set -euo pipefail
 # Source paths we are changing for the Trixie/RoboStack migration.
 # Add entries here as we touch more files. Missing paths are skipped silently.
 PATHS=(
+  .gitignore
   infra/pupper_image_builder/install_scripts/install_ros.sh
   infra/pupper_image_builder/install_scripts/build_ros.sh
   infra/pupper_image_builder/sync_from_pi.sh
@@ -47,6 +48,10 @@ PATHS=(
   ros2_ws/src/pupper_feelings/pupper_feelings/face_control_gui.py
   ros2_ws/src/hailo/hailo/hailo_depth.py
   ros2_ws/src/llm_websocket_server/llm_websocket_server/websocket_server.py
+  ai/playground/undistory/main.py
+  ai/playground/undistory/serve_viewer.py
+  ai/playground/image-description-benchmark/src/image_description_benchmark/gemini_test.py
+  analysis/histogram.py
 )
 
 echo ">> Pulling ${#PATHS[@]} path(s) from ${PI_SSH}:${PI_REPO}  ->  ${LOCAL_REPO}"

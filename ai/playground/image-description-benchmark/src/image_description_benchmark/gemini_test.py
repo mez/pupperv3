@@ -39,14 +39,11 @@ SYSTEM_INSTRUCTIONS = """
 Return bounding boxes or points as a JSON array with labels. Never return masks or code fencing. Limit to 25 objects.
 """
 
-image_path = Path(
-    #     "/Users/nathankau/pupperv3-monorepo/ai/playground/image-description-benchmark/src/image_description_benchmark/images/camera_image_raw_compressed-1755118546-420444431.jpg"
-    # "/Users/nathankau/pupperv3-monorepo/untracked_bags/tracking_me_rosbag2_2025_08_13-13_55_08/extracted_images/image_01755118597171220979.jpg"
-    # "/Users/nathankau/pupperv3-monorepo/ai/playground/image-description-benchmark/src/image_description_benchmark/images/609abd4bfd29a369ec80dd82_RoomSketcher-Kitchen-Layout-Ideas-3D-Floor-Plan.jpeg"
-    # "/Users/nathankau/pupperv3-monorepo/ai/playground/image-description-benchmark/src/image_description_benchmark/images/IMG_5907 Medium.jpeg"
-    # "/Users/nathankau/pupperv3-monorepo/ai/playground/image-description-benchmark/src/image_description_benchmark/images/equirect_ds.jpg"
-    # "/Users/nathankau/pupperv3-monorepo/ai/playground/undistory/output.jpg"
-    "/Users/nathankau/pupperv3-monorepo/ai/playground/image-description-benchmark/src/image_description_benchmark/images/gemini_annotated_image-0-000000000-EVA.png"
+# Sample image, relative to this script (in the sibling images/ folder).
+image_path = (
+    Path(__file__).resolve().parent
+    / "images"
+    / "gemini_annotated_image-0-000000000-EVA.png"
 )
 
 # Load image

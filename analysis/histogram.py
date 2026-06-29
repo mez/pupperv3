@@ -2,7 +2,7 @@
 
 """
 Example usage:
-python histogram.py --bagpath1 '/Users/nathankau/WOBBLY_feb_20'  --topic /neural_controller/observation --bagpath2 '/Users/nathankau/normal_walking_on_ground_rosbag2'
+python histogram.py --bagpath1 ~/bags/wobbly --topic /neural_controller/observation --bagpath2 ~/bags/normal_walking
 """
 
 

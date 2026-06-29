@@ -1,7 +1,9 @@
-# Ignore ROS2 workspace build, log, and install directories
+# Ignore ROS2 workspace build, log, install, pixi env, and cloned source deps
 ros2_ws/build/
 ros2_ws/log/
 ros2_ws/install/
+ros2_ws/.pixi/
+ros2_ws/src/common/
 
 # Bag recordings
 bags/
@@ -29,3 +31,6 @@ __pycache__/
 *.pem
 *.pyc
 *.wav
+
+# Editor / IDE
+.vscode/
