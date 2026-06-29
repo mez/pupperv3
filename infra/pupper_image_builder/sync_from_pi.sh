@@ -32,6 +32,12 @@ PATHS=(
   infra/pupper_image_builder/README.md
   ros2_ws/pixi.toml
   ros2_ws/pixi.lock
+  robot/utils/robot.service
+  robot/utils/battery_monitor.service
+  robot/services/volume-max.service
+  robot/services/set_audio_default.sh
+  pupper-rs/pupper-gui.service
+  ai/llm-ui/agent-starter-python/llm-agent.service
 )
 
 echo ">> Pulling ${#PATHS[@]} path(s) from ${PI_SSH}:${PI_REPO}  ->  ${LOCAL_REPO}"
