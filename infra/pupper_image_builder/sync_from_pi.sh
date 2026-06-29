@@ -29,6 +29,8 @@ PATHS=(
   infra/pupper_image_builder/install_scripts/install_ros.sh
   infra/pupper_image_builder/install_scripts/build_ros.sh
   infra/pupper_image_builder/sync_from_pi.sh
+  infra/pupper_image_builder/make_image.sh
+  infra/pupper_image_builder/base_image/provision_pios_base.sh
   infra/pupper_image_builder/README.md
   ros2_ws/pixi.toml
   ros2_ws/pixi.lock

@@ -5,8 +5,8 @@ Wants=graphical-session.target
 
 [Service]
 Type=simple
-WorkingDirectory=/home/pi/pupperv3-monorepo/pupper-rs
-ExecStart=/home/pi/pupperv3-monorepo/pupper-rs/run_gui.sh
+WorkingDirectory=/home/pi/pupperv3/pupper-rs
+ExecStart=/home/pi/pupperv3/pupper-rs/run_gui.sh
 Restart=always
 RestartSec=5
 StandardOutput=journal

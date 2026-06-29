@@ -1,5 +1,5 @@
 [Unit]
-Description=Set volume to 100%
+Description=Set HifiBerry as default sink and max volume (PipeWire)
 After=sound.target graphical-session.target
 Wants=sound.target
 
@@ -7,14 +7,15 @@ Wants=sound.target
 Type=oneshot
 User=pi
 Group=audio
-ExecStart=/usr/bin/amixer sset 'Master' 100%
+SupplementaryGroups=audio
+# PipeWire/WirePlumber, not ALSA 'Master' (which doesn't exist on the HifiBerry).
+ExecStart=/home/pi/pupperv3/robot/services/set_audio_default.sh
 RemainAfterExit=yes
 StandardOutput=journal
 StandardError=journal
-SupplementaryGroups=audio
 Environment="PATH=/usr/bin:/usr/local/bin"
 Environment="HOME=/home/pi"
-Environment="PULSE_RUNTIME_PATH=/run/user/1000/pulse"
+Environment="XDG_RUNTIME_DIR=/run/user/1000"
 
 [Install]
 WantedBy=multi-user.target
