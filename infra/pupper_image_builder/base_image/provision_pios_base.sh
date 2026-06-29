@@ -45,15 +45,17 @@ echo 'dtparam=spi=on' | sudo tee -a /boot/firmware/config.txt
 echo 'dtparam=i2c_arm=on,i2c_arm_baudrate=100000' | sudo tee -a /boot/firmware/config.txt
 echo 'usb_max_current_enable=1' | sudo tee -a /boot/firmware/config.txt
 
-# Touchscreen and HDMI (Waveshare 4" HDMI LCD (C))
+# Touchscreen overlays for the Waveshare 4" HDMI LCD (C) — these provide the
+# gt911 capacitive touch controller.
+#
+# The 720x720 mode is set by the cmdline `video=` line below; the connector is
+# force-enabled by its `D` flag; rotation + desktop mode are set by the kanshi
+# profile below. The legacy hdmi_* directives that used to be here
+# (hdmi_force_hotplug, config_hdmi_boost, hdmi_group, hdmi_mode, hdmi_timings)
+# are pre-KMS and IGNORED by the Pi 5 firmware, so they were removed.
 echo 'dtoverlay=waveshare-4dpic-3b' >> /boot/firmware/config.txt
 echo 'dtoverlay=waveshare-4dpic-4b' >> /boot/firmware/config.txt
 echo 'dtoverlay=waveshare-4dpic-5b' >> /boot/firmware/config.txt
-echo 'hdmi_force_hotplug=1' >> /boot/firmware/config.txt
-echo 'config_hdmi_boost=10' >> /boot/firmware/config.txt
-echo 'hdmi_group=2' >> /boot/firmware/config.txt
-echo 'hdmi_mode=87' >> /boot/firmware/config.txt
-echo 'hdmi_timings=720 0 100 20 100 720 0 20 8 20 0 0 0 60 0 48000000 6' >> /boot/firmware/config.txt
 echo 'start_x=0' >> /boot/firmware/config.txt
 echo 'gpu_mem=128' >> /boot/firmware/config.txt
 
@@ -61,6 +63,18 @@ echo 'gpu_mem=128' >> /boot/firmware/config.txt
 sed -i '1s/^/video=HDMI-A-1:720x720M@60D,rotate=270 /' /boot/firmware/cmdline.txt
 # Remove any leftover systemd.run firstrun.sh entries
 sed -i 's| systemd\.run=[^ ]*||g; s| systemd\.run_success_action=[^ ]*||g; s| systemd\.unit=[^ ]*||g' /boot/firmware/cmdline.txt
+
+# Desktop (Wayland) output mode + rotation. The cmdline video= above only sets
+# the *console*; the labwc compositor picks its own mode via kanshi and ignores
+# it. The 720x720 panel has no EDID, so without this kanshi profile the desktop
+# defaults to 1024x768 — which the panel can't sync, leaving it blank.
+install -d -o pi -g pi /home/pi/.config/kanshi
+cat > /home/pi/.config/kanshi/config <<'KANSHI'
+profile {
+    output HDMI-A-1 mode 720x720 transform 270 position 0,0
+}
+KANSHI
+chown pi:pi /home/pi/.config/kanshi/config
 
 # HiFiBerry DAC speaker
 echo 'dtoverlay=hifiberry-dac' >> /boot/firmware/config.txt
