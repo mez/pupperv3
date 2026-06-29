@@ -148,17 +148,19 @@ teleop_twist_joy_node:
       y: 0.5
 
     axis_angular:
-      yaw: 3
+      yaw: 2   # SDL joy_node: right-stick X is axis 2 (joy_linux/DualSense was 3)
     scale_angular:
       yaw: 2.0
 
     require_enable_button: false
 
-# joy_node:
-#   ros__parameters:
-#     dev: "/dev/input/js0"
-#     autorepeat_rate: 50.0
-#     coalesce_interval_ms: 20
+# SDL-based joy_node (reads the controller via evdev; see launch.py). device_id 0
+# = first joystick; SDL_JOYSTICK_HIDAPI=0 is set on the node in launch.py.
+joy_node:
+  ros__parameters:
+    autorepeat_rate: 50.0
+    deadzone: 0.05
+    device_id: 0
 
 joy_linux_node:
   ros__parameters:
@@ -178,8 +180,8 @@ cmd_vel_mux:
 
 joy_util_node:
   ros__parameters:
-    estop_index: 12
-    estop_release_index: 9
+    estop_index: 4          # 8BitDo/SDL: the button mapped during setup (was 12 on DualSense)
+    estop_release_index: 9  # TODO: verify on the 8BitDo (capture which button = release)
     controller_names: ["neural_controller", "neural_controller_three_legged", "forward_kp_controller", "forward_kd_controller", "forward_position_controller"]
     switch_button_indices: [0, 1]
 

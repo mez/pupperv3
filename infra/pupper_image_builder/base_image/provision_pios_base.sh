@@ -98,6 +98,11 @@ cat > /etc/udev/rules.d/99-pupper-touch-rotate.rules <<'TOUCHRULE'
 SUBSYSTEM=="input", ATTRS{name}=="Goodix Capacitive TouchScreen", ENV{LIBINPUT_CALIBRATION_MATRIX}="0 1 0 -1 0 1"
 TOUCHRULE
 
+# Game controller: load joydev at boot so a paired gamepad gets a /dev/input/js*
+# node (the neural_controller launch's joy_linux_node reads /dev/input/js0).
+# Without it, controllers register only as evdev and teleop sees no joystick.
+echo joydev > /etc/modules-load.d/joydev.conf
+
 # HiFiBerry DAC speaker
 echo 'dtoverlay=hifiberry-dac' >> /boot/firmware/config.txt
 

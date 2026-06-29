@@ -35,6 +35,8 @@ PATHS=(
   infra/pupper_image_builder/README.md
   ros2_ws/pixi.toml
   ros2_ws/pixi.lock
+  ros2_ws/src/neural_controller/launch/launch.py
+  ros2_ws/src/neural_controller/launch/config.yaml
   robot/utils/robot.service
   robot/utils/robot.sh
   robot/utils/battery_monitor.service

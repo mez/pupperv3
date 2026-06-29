@@ -88,12 +88,20 @@ def generate_launch_description():
     #
     # 6. Nodes from your original launch files
     #
-    # joy_node = Node(
-    #     package="joy",
-    #     executable="joy_node",
-    #     parameters=[node_parameters],
-    #     output="both",
-    # )
+    # joy_node (SDL-based) reads the controller via evdev, so it works with pads
+    # that don't expose a /dev/input/js0 — e.g. an 8BitDo / Switch Pro in the
+    # kernel's hid-nintendo mode (joy_linux needs js0, which joydev won't create
+    # for those). SDL_JOYSTICK_HIDAPI=0 forces SDL's evdev backend instead of its
+    # built-in Switch HIDAPI driver, which otherwise fights hid-nintendo and reads
+    # all-zero. (A DualSense works either way — joy_linux_node is kept below.)
+    joy_node = Node(
+        package="joy",
+        executable="joy_node",
+        parameters=[node_parameters],
+        additional_env={"SDL_JOYSTICK_HIDAPI": "0"},
+        output="both",
+        name="joy_node",
+    )
     joy_linux_node = Node(
         package="joy_linux",
         executable="joy_linux_node",
@@ -302,8 +310,8 @@ def generate_launch_description():
         imu_sensor_broadcaster_spawner,
         foxglove_bridge,
         joy_util_node,
-        # joy_node,
-        joy_linux_node,
+        joy_node,
+        # joy_linux_node,  # alt: needs /dev/input/js0 (e.g. a DualSense)
         teleop_twist_joy_node,
         camera_node,
         cmd_vel_mux_node,
