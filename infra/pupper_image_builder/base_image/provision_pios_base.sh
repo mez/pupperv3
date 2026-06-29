@@ -91,6 +91,13 @@ profile {
 KANSHI
 chown pi:pi /home/pi/.config/kanshi/config
 
+# Rotate the Goodix touchscreen to match the 270-degree display rotation. Without
+# this, the display is rotated but the touch is the identity matrix, so taps are
+# transposed on the square 720x720 panel and miss their targets.
+cat > /etc/udev/rules.d/99-pupper-touch-rotate.rules <<'TOUCHRULE'
+SUBSYSTEM=="input", ATTRS{name}=="Goodix Capacitive TouchScreen", ENV{LIBINPUT_CALIBRATION_MATRIX}="0 1 0 -1 0 1"
+TOUCHRULE
+
 # HiFiBerry DAC speaker
 echo 'dtoverlay=hifiberry-dac' >> /boot/firmware/config.txt
 

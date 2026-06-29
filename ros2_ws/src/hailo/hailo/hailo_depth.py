@@ -12,7 +12,7 @@ class HailoDepth:
         self.output_queue = queue.Queue()
 
         self.hailo_inference = HailoInfer(
-            hef_path="/home/pi/pupperv3-monorepo/ros2_ws/src/hailo/config/scdepthv3.hef",
+            hef_path="/home/pi/pupperv3/ros2_ws/src/hailo/config/scdepthv3.hef",
         )
         self.model_h, self.model_w, _ = self.hailo_inference.get_input_shape()
 
@@ -91,12 +91,12 @@ def main():
     print("HailoDepth instance created and inference thread started.")
 
     # image_path = (
-    #     "/home/pi/pupperv3-monorepo/ros2_ws/src/hailo/config/camera_image_raw_compressed-1759274101-438045672.png"
+    #     "/home/pi/pupperv3/ros2_ws/src/hailo/config/camera_image_raw_compressed-1759274101-438045672.png"
     # )
-    # image_path = "/home/pi/pupperv3-monorepo/ai/playground/fisheye_reprojection_benchmark/fisheye_to_pinhole_1400x1050_fov0.8.jpg"
+    # image_path = "/home/pi/pupperv3/ai/playground/fisheye_reprojection_benchmark/fisheye_to_pinhole_1400x1050_fov0.8.jpg"
 
     # large fov
-    image_path = "/home/pi/pupperv3-monorepo/ai/playground/fisheye_reprojection_benchmark/fisheye_to_pinhole_1400x1050_fov0.4.jpg"
+    image_path = "/home/pi/pupperv3/ai/playground/fisheye_reprojection_benchmark/fisheye_to_pinhole_1400x1050_fov0.4.jpg"
 
     frame = cv2.imread(image_path)
     if frame is None:

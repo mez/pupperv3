@@ -15,8 +15,8 @@ if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
 fi
 
 # --- Paths ---
-WS_DIR="$HOME/pupperv3-monorepo/ros2_ws/src/llm_websocket_server"
-UI_DIR="$HOME/pupperv3-monorepo/ai/llm-ui/live-audio"
+WS_DIR="$HOME/pupperv3/ros2_ws/src/llm_websocket_server"
+UI_DIR="$HOME/pupperv3/ai/llm-ui/live-audio"
 
 # --- Create session & panes ---
 # Pane 0: WebSocket server (left, largest)

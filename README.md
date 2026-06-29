@@ -28,7 +28,8 @@ sudo reboot
 
 ```bash
 ssh pi@pupper.local
-sudo bash install_ros.sh    # ~30-60 min
+sudo bash install_ros.sh    # ROS2 Jazzy env (RoboStack/pixi) + source deps
+bash build_ros.sh           # build the colcon workspace (~30-60 min; no sudo)
 ```
 
 ### 4. (Optional) Install the AI stack
@@ -37,7 +38,7 @@ sudo bash install_ros.sh    # ~30-60 min
 sudo bash install_ai.sh     # Rust, pupper-rs GUI, LiveKit voice agent
 ```
 
-Then create `/home/pi/pupperv3-monorepo/ai/llm-ui/agent-starter-python/.env` with your API keys and restart the service:
+Then create `/home/pi/pupperv3/ai/llm-ui/agent-starter-python/.env` with your API keys and restart the service:
 ```bash
 sudo systemctl restart agent-starter-python
 ```

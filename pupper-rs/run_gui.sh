@@ -6,7 +6,7 @@ export WAYLAND_DISPLAY=wayland-0
 export ROS_LOCALHOST_ONLY=1
 
 # Ensure we're in the correct directory
-cd /home/pi/pupperv3-monorepo/pupper-rs
+cd /home/pi/pupperv3/pupper-rs
 
 # Prefer aarch64 cross-compiled binary, fallback to local release
 if [ -x "./target/aarch64-unknown-linux-gnu/release/pupper-rs" ]; then

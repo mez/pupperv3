@@ -400,7 +400,7 @@ class WebSocketRobotServer(Node):
         try:
             # Use the same battery check script as openai_bridge
             result = subprocess.run(
-                ["python3", "/home/pi/pupperv3-monorepo/robot/utils/check_batt_voltage.py"],
+                ["python3", "/home/pi/pupperv3/robot/utils/check_batt_voltage.py"],
                 capture_output=True,
                 text=True,
                 timeout=5.0,

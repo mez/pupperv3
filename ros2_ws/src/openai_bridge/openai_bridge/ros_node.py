@@ -182,7 +182,7 @@ def activate(node: Node, service_client: Client):
 
 def get_battery_percentage_and_voltage():
     result = os.popen(
-        "python ~/pupperv3-monorepo/robot/utils/check_batt_voltage.py"
+        "python ~/pupperv3/robot/utils/check_batt_voltage.py"
     ).read()
     return result
 

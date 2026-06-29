@@ -40,6 +40,13 @@ PATHS=(
   robot/services/set_audio_default.sh
   pupper-rs/pupper-gui.service
   ai/llm-ui/agent-starter-python/llm-agent.service
+  README.md
+  pupper-rs/run_gui.sh
+  robot/start_ui.sh
+  ros2_ws/src/openai_bridge/openai_bridge/ros_node.py
+  ros2_ws/src/pupper_feelings/pupper_feelings/face_control_gui.py
+  ros2_ws/src/hailo/hailo/hailo_depth.py
+  ros2_ws/src/llm_websocket_server/llm_websocket_server/websocket_server.py
 )
 
 echo ">> Pulling ${#PATHS[@]} path(s) from ${PI_SSH}:${PI_REPO}  ->  ${LOCAL_REPO}"

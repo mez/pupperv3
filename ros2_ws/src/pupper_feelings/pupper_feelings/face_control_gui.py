@@ -141,7 +141,7 @@ class JoyListener(Node):
     def display_ip_battery_voltage(self, color_code=Colors.BLUE):
         ip_addr = check_output(["hostname", "-I"]).decode("utf-8").strip()
         battery_voltage = (
-            check_output(["python3", "/home/pi/pupperv3-monorepo/robot/utils/check_batt_voltage.py", "--percentage_only"])
+            check_output(["python3", "/home/pi/pupperv3/robot/utils/check_batt_voltage.py", "--percentage_only"])
             .decode("utf-8")
             .strip()
         )
