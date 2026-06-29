@@ -29,12 +29,15 @@ pkg-config = "*"
 colcon-common-extensions = "*"
 rosdep = "*"
 pip = "*"
+filelock = "*"          # ros2_control spawner needs it (else ModuleNotFoundError)
 numpy = "<2"
 empy = "==3.3.4"        # ROS message generation (pin avoids the em/empy clash)
-libcamera = "*"         # camera_ros
 nlohmann_json = "*"     # rosx_introspection
 rapidjson = "*"         # rosx_introspection
-libcap = "*"            # camera_ros
+# NOTE: camera_ros builds against the SYSTEM libcamera (apt libcamera-dev), NOT a
+# conda one — only the Raspberry Pi fork has the Pi 5 / imx296 pipeline handler.
+# The conda libcamera reports "no cameras available". build_ros.sh adds the system
+# pkgconfig path so cmake finds it. (libcap comes from the system too, via apt.)
 # Compiled / binary Python deps: take conda-forge's prebuilt builds. Building
 # these from PyPI sdists with the conda compiler drags in system Debian headers
 # (e.g. pyaudio -I/usr/include) and fails on Trixie's multiarch layout.
@@ -74,6 +77,8 @@ ros-jazzy-ros2-control = "*"          # hardware_interface, controller_interface
 ros-jazzy-ros2-controllers = "*"      # standard controllers (runtime)
 ros-jazzy-topic-tools = "*"           # replaces the source build (which mis-links standalone)
 ros-jazzy-foxglove-bridge = "*"       # replaces the foxglove-sdk source (websocketpp/asio break)
+ros-jazzy-xacro = "*"                 # URDF processing in neural_controller launch
+ros-jazzy-joy-linux = "*"             # joystick teleop node (joy_linux_node)
 
 # ---- Build tasks: pixi run -e jazzy build  &&  pixi run -e jazzy build-neural ----
 # -DPython3_FIND_VIRTUALENV=ONLY forces colcon to use the env's Python (the whole
@@ -82,7 +87,12 @@ ros-jazzy-foxglove-bridge = "*"       # replaces the foxglove-sdk source (websoc
 # Step 1: everything except neural_controller (built alone in step 2, OOM),
 # vision_msgs_rviz_plugins (API break) and pupper_mujoco_sim (sim-only, glfw
 # pthread link issue — not needed on the robot).
-build = "colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DPython_FIND_VIRTUALENV=ONLY -DPython3_FIND_VIRTUALENV=ONLY -DCMAKE_CXX_FLAGS=-g0 --packages-skip neural_controller vision_msgs_rviz_plugins pupper_mujoco_sim"
+build = "colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DPython_FIND_VIRTUALENV=ONLY -DPython3_FIND_VIRTUALENV=ONLY -DCMAKE_CXX_FLAGS=-g0 --packages-skip neural_controller vision_msgs_rviz_plugins pupper_mujoco_sim camera_ros"
+# camera_ros alone, built against the SYSTEM libcamera (apt) — only the Raspberry
+# Pi fork has the imx296/PiSP pipeline; the conda libcamera reports "no cameras".
+# CMake strips the pkg-config -I as a "system" path under the conda toolchain, so
+# we force the include + lib/rpath to /usr/lib/aarch64-linux-gnu explicitly.
+build-camera = "PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig:$PKG_CONFIG_PATH colcon build --symlink-install --packages-select camera_ros --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo -DPython3_FIND_VIRTUALENV=ONLY \"-DCMAKE_CXX_FLAGS=-g0 -I/usr/include/libcamera\" \"-DCMAKE_SHARED_LINKER_FLAGS=-L/usr/lib/aarch64-linux-gnu -Wl,-rpath,/usr/lib/aarch64-linux-gnu\""
 # Step 2: neural_controller alone — heavy Eigen/RTNeural templates OOM when parallel.
 # CMAKE_BUILD_PARALLEL_LEVEL=1 (env var, not a -D define) caps the compiler to one
 # job; --parallel-workers 1 keeps colcon to one package at a time.

@@ -48,9 +48,12 @@ build_step() {
     rm -f "$log"
 }
 
-# Step 1: all packages except neural_controller (OOM) and vision_msgs_rviz_plugins (API break).
+# Step 1: all packages except neural_controller (OOM), vision_msgs_rviz_plugins
+# (API break), pupper_mujoco_sim (sim-only), and camera_ros (built next).
 build_step "step 1" build
-# Step 2: neural_controller alone, single-threaded.
+# Step 2: camera_ros against the SYSTEM libcamera (Pi imx296/PiSP pipeline).
+build_step "camera_ros" build-camera
+# Step 3: neural_controller alone, single-threaded.
 build_step "neural_controller" build-neural
 
 # Convenience: `pupper-ros` drops into the built ROS env in interactive shells.

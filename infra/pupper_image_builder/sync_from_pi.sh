@@ -36,6 +36,7 @@ PATHS=(
   ros2_ws/pixi.toml
   ros2_ws/pixi.lock
   robot/utils/robot.service
+  robot/utils/robot.sh
   robot/utils/battery_monitor.service
   robot/services/volume-max.service
   robot/services/set_audio_default.sh

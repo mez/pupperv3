@@ -35,9 +35,12 @@ export DEBIAN_FRONTEND=noninteractive
 # Hailo's kernel driver + firmware live on the HOST regardless of how ROS is
 # installed; the matching pyhailort userspace goes into the pixi env later.
 apt-get update
-# portaudio19-dev + python3-dev: system deps to compile pyaudio (no conda/aarch64
-# wheel exists) against the system portaudio in the per-user step below.
-apt-get install -y curl git git-lfs portaudio19-dev python3-dev
+# portaudio19-dev + python3-dev: to compile pyaudio (no conda/aarch64 wheel)
+#   against the system portaudio in the per-user step below.
+# libcamera-dev + libcap-dev: camera_ros builds against the SYSTEM libcamera (the
+#   Raspberry Pi fork has the imx296/PiSP pipeline; conda's doesn't). Usually
+#   already on the Pi OS image, but pinned here for reproducibility.
+apt-get install -y curl git git-lfs portaudio19-dev python3-dev libcamera-dev libcap-dev
 
 # Non-interactively keep existing config files. (Avoid `yes N | apt ...`: under
 # `set -o pipefail`, yes dies of SIGPIPE and would falsely fail the pipeline.)
@@ -92,6 +95,28 @@ retry pixi install -e jazzy
 # the conda CFLAGS/LDFLAGS + override LDSHARED so the conda sysroot can't leak in.
 # All scoped to this one pip build, not the ROS/colcon builds.
 pixi run -e jazzy bash -c 'CC=/usr/bin/gcc CXX=/usr/bin/g++ LDSHARED="/usr/bin/gcc -shared" CFLAGS= CPPFLAGS= LDFLAGS= pip install pyaudio'
+
+# --- pyhailort: NOT on PyPI, and apt's python3-hailort is built for the system
+# Python (cp313) while this env is cp312. Build the cp312 binding from source
+# against the INSTALLED libhailort, matching its EXACT version (HailoRT requires
+# firmware/driver/libhailort/pyhailort all in lockstep). Skipped if no Hailo.
+HAILO_VER=\$(dpkg-query -W -f='\${Version}' hailort 2>/dev/null | grep -oE '^[0-9]+\.[0-9]+\.[0-9]+' || true)
+if [ -n "\$HAILO_VER" ]; then
+    echo "Building pyhailort cp312 for HailoRT \$HAILO_VER..."
+    rm -rf /tmp/hailort-src
+    retry git clone --depth 1 --branch "v\$HAILO_VER" https://github.com/hailo-ai/hailort.git /tmp/hailort-src
+    HB=/tmp/hailort-src/hailort/libhailort
+    # setup.py forwards only an allowlist of env vars to cmake — let the policy
+    # override through (the bundled pybind11 declares cmake_minimum_required <3.5).
+    sed -i 's/"LIBHAILORT_PATH",/"LIBHAILORT_PATH",\n        "CMAKE_POLICY_VERSION_MINIMUM",/' "\$HB/bindings/python/platform/setup.py"
+    ( cd "\$HB/bindings/python/platform" && \
+      LIBHAILORT_PATH=/usr/lib/libhailort.so HAILORT_INCLUDE_DIR="\$HB/include" \
+      CMAKE_BUILD_TYPE=Release CMAKE_POLICY_VERSION_MINIMUM=3.5 \
+      pixi run -e jazzy pip install . --no-deps )
+    rm -rf /tmp/hailort-src
+else
+    echo "Hailo (hailort) not installed — skipping pyhailort build."
+fi
 USEREOF
 
 echo ""
