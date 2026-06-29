@@ -64,13 +64,21 @@ fi
 docker pull mkaczanowski/packer-builder-arm:latest
 
 echo "Creating pupperv3 repo tarball for baking into image..."
+# Excludes keep the tarball lean if the build host happens to have a built
+# workspace (the conda env + colcon artifacts are GBs and are recreated on the
+# Pi by install_ros.sh / build_ros.sh). install_scripts is included so a freshly
+# flashed image has the post-boot setup scripts (install_ros.sh / build_ros.sh).
 tar -czf resources/pupperv3_src.tar.gz \
     --exclude='__pycache__' \
     --exclude='*.pyc' \
+    --exclude='.pixi' \
+    --exclude='ros2_ws/build' \
+    --exclude='ros2_ws/install' \
+    --exclude='ros2_ws/log' \
+    --exclude='ros2_ws/src/common' \
     -C "${REPO_ROOT}" \
     ros2_ws ai robot pupper-rs scripts README.md \
-    -C "${REPO_ROOT}/infra/pupper_image_builder" \
-    install_scripts
+    infra/pupper_image_builder/install_scripts
 
 docker run --rm --privileged -v /dev:/dev -v "${PWD}:/build" mkaczanowski/packer-builder-arm:latest init pios_base_arm64.pkr.hcl
 docker run --rm --privileged -v /dev:/dev -v "${PWD}:/build" mkaczanowski/packer-builder-arm:latest build pios_base_arm64.pkr.hcl

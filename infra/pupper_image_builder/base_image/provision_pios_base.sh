@@ -32,7 +32,9 @@ fi
 mkdir -p /home/$DEFAULT_USER
 chown -R $DEFAULT_USER /home/$DEFAULT_USER
 
-# Extract pre-staged pupperv3 repo into pi's home directory
+# Extract pre-staged pupperv3 repo into pi's home directory.
+# No --strip-components: the tarball entries are already top-level dirs
+# (ros2_ws/, robot/, infra/...), so they land directly under pupperv3/.
 mkdir -p /home/pi/pupperv3
 tar -xzf /tmp/pupperv3_src.tar.gz -C /home/pi/pupperv3
 rm /tmp/pupperv3_src.tar.gz
