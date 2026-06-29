@@ -1,9 +1,23 @@
 #!/bin/bash -e
-# install_ros.sh — Run on the Pi after first boot to install ROS2 and build the workspace.
+# install_ros.sh — Run on the Pi (Raspberry Pi OS Trixie) after first boot to set
+# up the ROS 2 Jazzy *environment*. It does NOT build the workspace — run
+# build_ros.sh for that.
+#
 # Usage: sudo bash install_ros.sh
-#   Optional: GITHUB_TOKEN=ghp_xxx sudo -E bash install_ros.sh
+#
+# Why RoboStack/pixi instead of `apt install ros-jazzy-desktop`?
+#   Trixie ships Python 3.13 only. Jazzy's Ubuntu-Noble .debs are built for
+#   Python 3.12 (not installable on Trixie), so the old apt approach is broken
+#   on this host. RoboStack provides Jazzy via conda with a matched Python.
+#   The env is defined declaratively in ros2_ws/pixi.toml.
+#
+# Privilege model: apt + the Hailo driver need root; pixi is per-user, so the
+# conda/pixi work runs as $DEFAULT_USER.
 
 set -x
+# Explicit, because `sudo bash install_ros.sh` ignores the shebang's -e.
+set -e
+set -o pipefail
 
 if [ "$(id -u)" -ne 0 ]; then
     echo "Run as root: sudo bash install_ros.sh"
@@ -11,180 +25,75 @@ if [ "$(id -u)" -ne 0 ]; then
 fi
 
 DEFAULT_USER=${SUDO_USER:-pi}
-HOME_DIR=/home/$DEFAULT_USER
-
-# Handle optional GitHub token for private repo access
-GIT_ASKPASS_SCRIPT=""
-GITHUB_TOKEN_CONFIGURED=false
-
-cleanup_github_credentials() {
-    if [ -n "${GIT_ASKPASS_SCRIPT:-}" ] && [ -f "${GIT_ASKPASS_SCRIPT}" ]; then
-        rm -f "${GIT_ASKPASS_SCRIPT}"
-    fi
-    unset GIT_ASKPASS_SCRIPT GIT_ASKPASS GIT_TERMINAL_PROMPT GITHUB_TOKEN
-    GITHUB_TOKEN_CONFIGURED=false
-}
-
-if [ -n "${GITHUB_TOKEN:-}" ]; then
-    GITHUB_TOKEN_CONFIGURED=true
-    GIT_ASKPASS_SCRIPT=$(mktemp /tmp/git-askpass-XXXXXX.sh)
-    cat <<'EOF' > "${GIT_ASKPASS_SCRIPT}"
-#!/bin/sh
-case "$1" in
-  Username*) echo "x-access-token" ;;
-  Password*) echo "${GITHUB_TOKEN}" ;;
-  *) echo "${GITHUB_TOKEN}" ;;
-esac
-EOF
-    chmod 700 "${GIT_ASKPASS_SCRIPT}"
-    export GIT_ASKPASS="${GIT_ASKPASS_SCRIPT}"
-    export GIT_TERMINAL_PROMPT=0
-    trap cleanup_github_credentials EXIT
-fi
-
-retry_command() {
-    local cmd="$1"
-    local max_attempts=20
-    local attempt=0
-    until eval "$cmd" || [ $attempt -ge $max_attempts ]; do
-        attempt=$((attempt + 1))
-        echo "Attempt $attempt/$max_attempts failed. Retrying in 1 second..."
-        sleep 1
-    done
-    if [ $attempt -ge $max_attempts ]; then
-        echo "Command failed after $max_attempts attempts."
-        return 1
-    fi
-}
+HOME_DIR="/home/$DEFAULT_USER"
+WS="$HOME_DIR/pupperv3/ros2_ws"
+COMMON="$WS/src/common"
 
 export DEBIAN_FRONTEND=noninteractive
 
-################################ Install ROS2 Jazzy ################################
-# ROS2 Jazzy is the latest LTS (supported until May 2029)
-# Using the Ubuntu Noble (24.04) package suite — compatible with PiOS Bookworm arm64
-
-apt-get install -y curl gnupg
-curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc \
-  | gpg --dearmor -o /usr/share/keyrings/ros-archive-keyring.gpg
-
-echo "deb [arch=arm64 signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] \
-http://packages.ros.org/ros2/ubuntu noble main" \
-  | tee /etc/apt/sources.list.d/ros2.list > /dev/null
-
+################################ System packages (root) ################################
+# Hailo's kernel driver + firmware live on the HOST regardless of how ROS is
+# installed; the matching pyhailort userspace goes into the pixi env later.
 apt-get update
-apt-get install -y ros-jazzy-desktop
+# portaudio19-dev + python3-dev: system deps to compile pyaudio (no conda/aarch64
+# wheel exists) against the system portaudio in the per-user step below.
+apt-get install -y curl git git-lfs portaudio19-dev python3-dev
 
-sudo rm -f /usr/lib/python3.*/EXTERNALLY-MANAGED
-pip install vcstool colcon-common-extensions
-
-echo "source /opt/ros/jazzy/setup.bash" >> "$HOME_DIR/.bashrc"
-source /opt/ros/jazzy/setup.bash
-
-################################ Install Hailo ################################
-yes N | DEBIAN_FRONTEND=noninteractive apt full-upgrade -y
+# Non-interactively keep existing config files. (Avoid `yes N | apt ...`: under
+# `set -o pipefail`, yes dies of SIGPIPE and would falsely fail the pipeline.)
+apt-get full-upgrade -y -o Dpkg::Options::=--force-confold -o Dpkg::Options::=--force-confdef
 apt-get install -y hailo-all
 
-################################ Clone monorepo ################################
-apt-get install -y git git-lfs
+# Source deps live under the user's workspace. Create the dir and ensure it's
+# user-owned — earlier root-run clones leave it root-owned, which blocks the
+# per-user git/pixi steps below.
+mkdir -p "$COMMON"
+chown -R "$DEFAULT_USER:$DEFAULT_USER" "$COMMON"
 
-cd "$HOME_DIR"
-rm -rf pupperv3
-retry_command "git clone https://github.com/mez/pupperv3.git --recurse-submodules"
-cd "$HOME_DIR/pupperv3"
-git config --global --add safe.directory "$HOME_DIR/pupperv3"
-git lfs install
-git lfs pull
-chown -R "$DEFAULT_USER:$DEFAULT_USER" "$HOME_DIR/pupperv3"
+################################ ROS env + workspace sources (user) ################################
+# Everything below is per-user: pixi installs to ~/.pixi, the env to ros2_ws/.pixi.
+sudo -u "$DEFAULT_USER" -H bash -e <<USEREOF
+set -x
+export PATH="\$HOME/.pixi/bin:\$PATH"
 
-################################ Python deps ################################
-pip install wandb sounddevice pydub pyaudio black supervision opencv-python loguru pandas
-pip install Adafruit-Blinka RPi.GPIO
-pip install "numpy<2" "opencv-python" "pyzmq"
-pip install typeguard
-pip uninstall -y em || true
-pip install empy==3.3.4
+retry() { local n=0; until "\$@"; do n=\$((n+1)); [ \$n -ge 20 ] && { echo "giving up after \$n attempts"; return 1; }; echo "attempt \$n failed, retrying in 1s..."; sleep 1; done; }
 
-################################ ROS2 source deps ################################
-mkdir -p "$HOME_DIR/pupperv3/ros2_ws/src/common"
-cd "$HOME_DIR/pupperv3/ros2_ws/src/common"
+# --- Install pixi (no-op if already present) ---
+command -v pixi >/dev/null 2>&1 || curl -fsSL https://pixi.sh/install.sh | bash
+export PATH="\$HOME/.pixi/bin:\$PATH"
 
-apt-get install -y libcap-dev libwebsocketpp-dev nlohmann-json3-dev libcamera-dev
-
-repos=(
-    "https://github.com/facontidavide/rosx_introspection.git"
-    "https://github.com/foxglove/foxglove-sdk.git"
-    "https://github.com/christianrauch/camera_ros.git"
-    "https://github.com/ros-perception/vision_msgs.git"
-)
-for repo in "${repos[@]}"; do
-    retry_command "git clone $repo --recurse-submodules"
+# --- Clone workspace source deps into src/common/ ---
+mkdir -p "$COMMON"
+cd "$COMMON"
+for repo in \
+    https://github.com/facontidavide/rosx_introspection.git \
+    https://github.com/christianrauch/camera_ros.git \
+    https://github.com/ros-perception/vision_msgs.git ; do
+    name=\$(basename "\$repo" .git)
+    [ -d "\$name/.git" ] || retry git clone "\$repo" --recurse-submodules
 done
+# These are NOT built from source — we use conda's prebuilt packages instead
+# (see pixi.toml): topic_tools mis-links its *Node executables when built
+# standalone, and foxglove-sdk's foxglove_bridge breaks on modern asio/websocketpp.
+rm -rf topic_tools foxglove-sdk
 
-# Pin foxglove-sdk — commit before ament_index_cpp/version.h was required (Mar 5 2026 broke Jazzy builds)
-git config --global --add safe.directory "$HOME_DIR/pupperv3/ros2_ws/src/common/foxglove-sdk"
-cd "$HOME_DIR/pupperv3/ros2_ws/src/common/foxglove-sdk"
-git checkout 854ac57892da4c7171513ebc7dcb09ba5f63f9a3
+# --- Pin source deps to known-good commits ---
+git config --global --add safe.directory "$COMMON/rosx_introspection"
+git -C "$COMMON/rosx_introspection" checkout 3922e2c                              # older commit avoids GTest errors
 
-# Pin rosx_introspection — older commit avoids GTest errors
-git config --global --add safe.directory "$HOME_DIR/pupperv3/ros2_ws/src/common/rosx_introspection"
-cd "$HOME_DIR/pupperv3/ros2_ws/src/common/rosx_introspection"
-git checkout 3922e2c
+# --- Materialize the Jazzy env (downloads ROS — slow, ~GBs) ---
+cd "$WS"
+retry pixi install -e jazzy
 
-cd "$HOME_DIR/pupperv3/ros2_ws/src/common"
-retry_command "git clone https://github.com/ros-tooling/topic_tools.git --branch jazzy --recurse-submodules"
-
-if [ "$GITHUB_TOKEN_CONFIGURED" = true ]; then
-    cleanup_github_credentials
-    trap - EXIT
-fi
-
-################################ Build workspace ################################
-cd "$HOME_DIR/pupperv3/ros2_ws"
-source /opt/ros/jazzy/setup.bash
-
-# Step 1: Build all packages except neural_controller (OOM) and vision_msgs_rviz_plugins (API break)
-tmpfile=$(mktemp /tmp/ros2-build-output.XXXXXX)
-if ! colcon build --symlink-install \
-    --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
-      -DPython3_EXECUTABLE=/usr/bin/python3 -DCMAKE_CXX_FLAGS="-g0" \
-    --packages-skip neural_controller vision_msgs_rviz_plugins \
-    2>&1 | tee "$tmpfile"; then
-    echo "colcon build (step 1) failed" >&2
-    rm -f "$tmpfile"
-    exit 1
-fi
-if grep -qi 'failed' "$tmpfile"; then
-    echo "colcon build (step 1) reported failures" >&2
-    rm -f "$tmpfile"
-    exit 1
-fi
-rm -f "$tmpfile"
-
-# Step 2: Build neural_controller alone — heavy Eigen/RTNeural templates cause OOM when parallel
-tmpfile=$(mktemp /tmp/ros2-build-output.XXXXXX)
-if ! colcon build --symlink-install \
-    --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
-      -DPython3_EXECUTABLE=/usr/bin/python3 -DCMAKE_CXX_FLAGS="-g0" \
-    --packages-select neural_controller \
-    --parallel-workers 1 \
-    -- --cmake-args -DCMAKE_BUILD_PARALLEL_LEVEL=1 \
-    2>&1 | tee "$tmpfile"; then
-    echo "colcon build (neural_controller) failed" >&2
-    rm -f "$tmpfile"
-    exit 1
-fi
-if grep -qi 'failed' "$tmpfile"; then
-    echo "colcon build (neural_controller) reported failures" >&2
-    rm -f "$tmpfile"
-    exit 1
-fi
-rm -f "$tmpfile"
-
-echo "source $HOME_DIR/pupperv3/ros2_ws/install/local_setup.bash" >> "$HOME_DIR/.bashrc"
-
-chown -R "$DEFAULT_USER:$DEFAULT_USER" "$HOME_DIR"
+# --- pyaudio: no conda/aarch64 wheel. Build from PyPI against the system
+# portaudio (apt portaudio19-dev). Use the *absolute* system gcc (/usr/bin/gcc):
+# bare `gcc` resolves to the conda env's gcc shim, which applies conda's
+# --sysroot and mixes glibc headers ('fatal error: bits/timesize.h'). Also clear
+# the conda CFLAGS/LDFLAGS + override LDSHARED so the conda sysroot can't leak in.
+# All scoped to this one pip build, not the ROS/colcon builds.
+pixi run -e jazzy bash -c 'CC=/usr/bin/gcc CXX=/usr/bin/g++ LDSHARED="/usr/bin/gcc -shared" CFLAGS= CPPFLAGS= LDFLAGS= pip install pyaudio'
+USEREOF
 
 echo ""
-echo "ROS2 Jazzy installed and workspace built successfully."
-echo "Run 'source ~/.bashrc' or open a new terminal to use ROS2."
-echo "Next step (optional): sudo bash install_ai.sh"
+echo "ROS 2 Jazzy environment ready (RoboStack/pixi). Workspace NOT built yet."
+echo "Next: bash build_ros.sh   (no sudo needed — the build is per-user)"

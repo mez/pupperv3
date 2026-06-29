@@ -1,0 +1,98 @@
+# pixi.toml — RoboStack ROS 2 Jazzy environment for the pupperv3 workspace.
+#
+# Lives at the colcon workspace root (ros2_ws/). Created during the Trixie
+# migration: Debian 13 / Raspberry Pi OS Trixie ships Python 3.13, but ROS 2
+# Jazzy's Ubuntu-Noble .debs are built for Python 3.12 (and python3.12 is not
+# installable on Trixie). So we get ROS from RoboStack (conda) with a matched
+# Python instead of the old `apt install ros-jazzy-desktop` hack.
+#
+# Used by infra/pupper_image_builder/install_scripts/{install_ros,build_ros}.sh
+#   pixi install -e jazzy        # materialize the env (install_ros.sh)
+#   pixi run -e jazzy build      # build the workspace (build_ros.sh)
+#   pixi shell -e jazzy          # interactive ROS env
+
+[workspace]
+name = "pupperv3-ros2"
+channels = ["https://prefix.dev/conda-forge"]
+platforms = ["linux-aarch64"]
+
+# ---- Build toolchain + system libs (ABI-matched to the conda ROS) ----
+# The libcamera / nlohmann_json / websocketpp / libcap that the old script
+# pulled from apt now come from conda so they match the conda compiler ABI.
+[dependencies]
+python = "*"
+compilers = "*"
+cmake = "*"
+ninja = "*"
+make = "*"
+pkg-config = "*"
+colcon-common-extensions = "*"
+rosdep = "*"
+pip = "*"
+numpy = "<2"
+empy = "==3.3.4"        # ROS message generation (pin avoids the em/empy clash)
+libcamera = "*"         # camera_ros
+nlohmann_json = "*"     # rosx_introspection
+rapidjson = "*"         # rosx_introspection
+libcap = "*"            # camera_ros
+# Compiled / binary Python deps: take conda-forge's prebuilt builds. Building
+# these from PyPI sdists with the conda compiler drags in system Debian headers
+# (e.g. pyaudio -I/usr/include) and fails on Trixie's multiarch layout.
+portaudio = "*"          # runtime lib for sounddevice + build target for pyaudio
+python-sounddevice = "*"
+pyzmq = "*"
+pandas = "*"
+# NOTE: pyaudio is NOT here — it has no conda/aarch64 wheel. install_ros.sh builds
+# it from PyPI in-env with CPATH set (see the pyaudio step there).
+
+# ---- Pure-Python deps (wheels, no compilation) — fine from PyPI ----
+[pypi-dependencies]
+wandb = "*"
+pydub = "*"
+supervision = "*"
+opencv-python = "*"     # prebuilt manylinux wheel; coexists with ROS opencv as before
+loguru = "*"
+typeguard = "*"
+adafruit-blinka = "*"
+rpi-gpio = "*"          # compiles a small C ext (conda sysroot only) — watch on first solve
+# pyhailort = "==X.Y.Z"  # ⚠️ RISK: install the pyhailort wheel matching THIS env's
+#                        # Python and the host HailoRT from `hailo-all` (apt). Pin
+#                        # once confirmed on the Pi — until then hailo nodes won't run.
+
+# ---- Jazzy environment ----
+[environments]
+jazzy = { features = ["jazzy", "build"] }
+
+[feature.jazzy]
+channels = ["https://prefix.dev/robostack-jazzy"]
+
+[feature.jazzy.dependencies]
+ros-jazzy-desktop = "*"
+ros-jazzy-ros2cli = "*"
+ros-jazzy-camera-info-manager = "*"   # camera_ros dep, not bundled in -desktop
+ros-jazzy-ros2-control = "*"          # hardware_interface, controller_interface, controller_manager_msgs
+ros-jazzy-ros2-controllers = "*"      # standard controllers (runtime)
+ros-jazzy-topic-tools = "*"           # replaces the source build (which mis-links standalone)
+ros-jazzy-foxglove-bridge = "*"       # replaces the foxglove-sdk source (websocketpp/asio break)
+
+# ---- Build tasks: pixi run -e jazzy build  &&  pixi run -e jazzy build-neural ----
+# -DPython3_FIND_VIRTUALENV=ONLY forces colcon to use the env's Python (the whole
+# point of the migration — no more system Python 3.13 leaking in).
+[feature.build.target.unix.tasks]
+# Step 1: everything except neural_controller (built alone in step 2, OOM),
+# vision_msgs_rviz_plugins (API break) and pupper_mujoco_sim (sim-only, glfw
+# pthread link issue — not needed on the robot).
+build = "colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DPython_FIND_VIRTUALENV=ONLY -DPython3_FIND_VIRTUALENV=ONLY -DCMAKE_CXX_FLAGS=-g0 --packages-skip neural_controller vision_msgs_rviz_plugins pupper_mujoco_sim"
+# Step 2: neural_controller alone — heavy Eigen/RTNeural templates OOM when parallel.
+# CMAKE_BUILD_PARALLEL_LEVEL=1 (env var, not a -D define) caps the compiler to one
+# job; --parallel-workers 1 keeps colcon to one package at a time.
+# CMAKE_POLICY_VERSION_MINIMUM=3.5: the bundled RTNeural submodule declares
+# cmake_minimum_required below 3.5, which conda's modern cmake rejects outright.
+build-neural = "CMAKE_BUILD_PARALLEL_LEVEL=1 colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DPython_FIND_VIRTUALENV=ONLY -DPython3_FIND_VIRTUALENV=ONLY -DCMAKE_CXX_FLAGS=-g0 -DCMAKE_POLICY_VERSION_MINIMUM=3.5 --packages-select neural_controller --parallel-workers 1"
+
+# ============================ RISK NOTES (resolve on the Pi) ============================
+# 1. pyhailort — must match this env's Python (see commented line above). The kernel
+#    driver/firmware comes from `hailo-all` on the HOST (install_ros.sh, apt).
+# 2. camera_ros — builds against the CONDA libcamera above, not the system one. If it
+#    fails to find pipelines/IPA at runtime, the fallback is to build camera_ros against
+#    system libcamera (remove the conda libcamera dep + add libcamera-dev via apt).

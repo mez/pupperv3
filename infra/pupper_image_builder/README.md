@@ -22,9 +22,14 @@ Flash the pre-built image, boot, connect via SSH, then run the install script:
 
 ```bash
 ssh pi@pupper.local         # password: pupper123
-sudo bash install_ros.sh    # installs ROS2 + builds workspace (~30-60 min)
+sudo bash install_ros.sh    # sets up the ROS2 Jazzy env (RoboStack/pixi) + clones deps
+bash build_ros.sh           # builds the colcon workspace (~30-60 min; no sudo needed)
 sudo bash install_ai.sh     # optional: adds Rust, GUI, LiveKit voice agent
 ```
+
+> ROS 2 Jazzy is installed via [RoboStack](https://robostack.github.io/) (conda/pixi),
+> not apt: Trixie ships Python 3.13 but Jazzy's apt packages target Python 3.12.
+> The env is defined in `ros2_ws/pixi.toml`.
 
 ### Option B — Step by step (learning / customization)
 
@@ -64,14 +69,18 @@ sudo reboot
 infra/pupper_image_builder/
   make_image.sh               # builds the base image
   setup_wifi.sh               # post-boot WiFi configuration
+  sync_from_pi.sh             # dev: pull live edits off the Pi into this repo (run on WSL host)
   base_image/
     pios_base_arm64.pkr.hcl   # Packer config
     provision_pios_base.sh    # hardware provisioning script
     resources/firstrun.sh     # first-boot user/hostname/SSH setup
   install_scripts/
-    install_ros.sh             # post-boot: ROS2 Jazzy + workspace build
+    install_ros.sh             # post-boot: ROS2 Jazzy env via RoboStack/pixi + source deps
+    build_ros.sh               # post-boot: build the colcon workspace
     install_ai.sh              # post-boot: Rust + pupper-rs GUI + LiveKit
 ```
+
+The ROS env is defined in `ros2_ws/pixi.toml` (channels, ROS desktop, build tasks).
 
 ## Default credentials
 
